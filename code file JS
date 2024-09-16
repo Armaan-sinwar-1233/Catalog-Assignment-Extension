@@ -1,0 +1,102 @@
+const math = require('mathjs');
+
+// Function to decode y values from various bases
+function decodeYValue(base, value) {
+    return parseInt(value, base);
+}
+
+// Lagrange Interpolation Function
+function lagrangeInterpolation(xValues, yValues) {
+    const n = xValues.length;
+    const polynomial = x => {
+        let result = 0;
+        for (let i = 0; i < n; i++) {
+            let term = yValues[i];
+            for (let j = 0; j < n; j++) {
+                if (i !== j) {
+                    term *= (x - xValues[j]) / (xValues[i] - xValues[j]);
+                }
+            }
+            result += term;
+        }
+        return result;
+    };
+    return polynomial;
+}
+
+// Check if a point is on the polynomial
+function isPointOnPolynomial(polynomial, xVal, yVal) {
+    return math.isEqual(polynomial(xVal), yVal);
+}
+
+// Input Data (second test case)
+const testCase = {
+    "keys": { "n": 9, "k": 6 },
+    "1": { "base": "10", "value": "28735619723837" },
+    "2": { "base": "16", "value": "1A228867F0CA" },
+    "3": { "base": "12", "value": "32811A4AA0B7B" },
+    "4": { "base": "11", "value": "917978721331A" },
+    "5": { "base": "16", "value": "1A22886782E1" },
+    "6": { "base": "10", "value": "28735619654702" },
+    "7": { "base": "14", "value": "71AB5070CC4B" },
+    "8": { "base": "9", "value": "122662581541670" },
+    "9": { "base": "8", "value": "642121030037605" }
+};
+
+// Step 1: Parse and decode all (x, y) pairs
+const points = [];
+for (let key in testCase) {
+    if (key !== 'keys') {
+        const xVal = parseInt(key);
+        const base = parseInt(testCase[key]['base']);
+        const yVal = decodeYValue(base, testCase[key]['value']);
+        points.push({ x: xVal, y: yVal });
+    }
+}
+
+// Helper function to generate combinations
+function combinations(array, k) {
+    const result = [];
+    const f = (prefix, array, k) => {
+        if (k === 0) {
+            result.push(prefix);
+            return;
+        }
+        for (let i = 0; i < array.length; i++) {
+            f(prefix.concat(array[i]), array.slice(i + 1), k - 1);
+        }
+    };
+    f([], array, k);
+    return result;
+}
+
+// Step 2: Try different combinations of 6 points and find the polynomial
+const xValues = points.map(point => point.x);
+const yValues = points.map(point => point.y);
+
+// Find all combinations of 6 points
+const combos = combinations(points, 6);
+
+// Step 3: Check each combination of 6 points
+for (const combo of combos) {
+    const xCombo = combo.map(point => point.x);
+    const yCombo = combo.map(point => point.y);
+
+    // Find the polynomial for this combination
+    const polynomial = lagrangeInterpolation(xCombo, yCombo);
+
+    // Check if the polynomial satisfies all the points
+    const incorrectPoints = [];
+    for (const point of points) {
+        if (!isPointOnPolynomial(polynomial, point.x, point.y)) {
+            incorrectPoints.push(point);
+        }
+    }
+
+    // If we found incorrect points, break and print the result
+    if (incorrectPoints.length <= 3) {
+        console.log("Incorrect points:", incorrectPoints);
+        console.log("Polynomial: f(x) = ..."); // Polynomial string is not directly available in this approach
+        break;
+    }
+}
